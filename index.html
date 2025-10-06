@@ -1,78 +1,90 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-  <head>
-    <meta charset="utf-8">
-    <title>Molly WebAR 即時換材質</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.2/aframe/build/aframe-ar.js"></script>
-    <style>
-      body { margin:0; overflow:hidden; }
-      #ui {
-        position: fixed;
-        bottom: 15px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 8px;
-        z-index: 10;
-      }
-      button {
-        padding: 8px 12px;
-        border: none;
-        border-radius: 8px;
-        background: rgba(255,255,255,0.9);
-        font-size: 14px;
-        cursor: pointer;
-      }
-    </style>
-  </head>
-  <body>
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-      <!-- 燈光 -->
-      <a-entity light="type: ambient; intensity:0.6"></a-entity>
-      <a-entity light="type: directional; intensity:1" position="1 3 2"></a-entity>
+<head>
+  <meta charset="utf-8">
+  <title>Molly WebAR 即時換顏色</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.2/aframe/build/aframe-ar.js"></script>
+  <style>
+    body { margin:0; overflow:hidden; }
+    #ui {
+      position: fixed;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 100; /* 確保在 AR canvas 之上 */
+      pointer-events: auto; /* 手機可點擊 */
+    }
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.9);
+      font-size: 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+    <!-- 燈光 -->
+    <a-entity light="type: ambient; intensity:0.6"></a-entity>
+    <a-entity light="type: directional; intensity:1" position="1 3 2"></a-entity>
 
-      <!-- 模型 -->
-      <a-entity id="molly"
-        position="0 0 -1"
-        scale="0.8 0.8 0.8"
-        gltf-model="url(molly.glb)">
-      </a-entity>
-    </a-scene>
+    <!-- 模型 -->
+    <a-entity id="molly"
+      position="0 0 -1"
+      scale="0.8 0.8 0.8"
+      gltf-model="url(molly.glb)">
+    </a-entity>
+  </a-scene>
 
-    <!-- UI 按鈕 -->
-    <div id="ui">
-      <button id="btn1">樣式 1</button>
-      <button id="btn5">樣式 5</button>
-      <button id="btn9">樣式 9</button>
-    </div>
+  <!-- HTML 按鈕 UI -->
+  <div id="ui">
+    <button id="btn1">樣式 1</button>
+    <button id="btn5">樣式 5</button>
+    <button id="btn9">樣式 9</button>
+  </div>
 
-    <script>
-      const molly = document.querySelector('#molly');
-      let mollyMesh = null;
+  <script>
+    const molly = document.querySelector('#molly');
+    let mollyMesh = null;
 
-      // 等模型載入完成
-      molly.addEventListener('model-loaded', () => {
-        console.log('Molly 模型已載入');
-        mollyMesh = molly.getObject3D('mesh');
+    // 確保模型完全載入
+    molly.addEventListener('model-loaded', () => {
+      console.log('Molly 模型已載入');
+      mollyMesh = molly.getObject3D('mesh');
+    });
+
+    // 替換貼圖
+    function changeTexture(imgFile) {
+      if (!mollyMesh) return console.warn('模型尚未載入完成');
+      const loader = new THREE.TextureLoader();
+      const tex = loader.load('textures/' + imgFile, t => t.flipY = false);
+      mollyMesh.traverse(node => {
+        if (node.isMesh && node.material) {
+          node.material.map = tex;
+          node.material.needsUpdate = true;
+        }
       });
+    }
 
-      function changeTexture(imgFile) {
-        if (!mollyMesh) return console.warn('模型尚未載入完成');
-        const loader = new THREE.TextureLoader();
-        const tex = loader.load('textures/' + imgFile, t => t.flipY = false); // <-- 改路徑
-        mollyMesh.traverse(node => {
-          if (node.isMesh && node.material) {
-            node.material.map = tex;
-            node.material.needsUpdate = true;
-          }
-        });
-      }
+    // 手機點擊事件
+    const btn1 = document.querySelector('#btn1');
+    const btn5 = document.querySelector('#btn5');
+    const btn9 = document.querySelector('#btn9');
 
-      document.querySelector('#btn1').addEventListener('click', () => { changeTexture('mat1.jpg'); });
-      document.querySelector('#btn5').addEventListener('click', () => { changeTexture('mat5.jpg'); });
-      document.querySelector('#btn9').addEventListener('click', () => { changeTexture('mat9.jpg'); });
-    </script>
-  </body>
+    btn1.addEventListener('click', () => changeTexture('mat1.jpg'));
+    btn5.addEventListener('click', () => changeTexture('mat5.jpg'));
+    btn9.addEventListener('click', () => changeTexture('mat9.jpg'));
+
+    // 兼容手機觸控
+    btn1.addEventListener('touchstart', () => changeTexture('mat1.jpg'));
+    btn5.addEventListener('touchstart', () => changeTexture('mat5.jpg'));
+    btn9.addEventListener('touchstart', () => changeTexture('mat9.jpg'));
+  </script>
+</body>
 </html>
